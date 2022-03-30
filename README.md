@@ -1,1 +1,1 @@
-# ba-thesis-scripts
+# Thesis Scripts
