@@ -1,33 +1,57 @@
 #!/bin/bash
 
-usage() { echo "Usage: $0 [-d <string>] [-s <int>] [-t <string>, for example '2 days'] [-s <int>] [-p <string>]" 1>&2; exit 1; }
+################################################################
+###################          Setup           ###################
+################################################################
+usage() { echo "Usage: $0 [-d <string>] [-s <int> in seconds] [-t <string>, for example '2 days'] [-s <int>] [-p <string>]" exit 0; }
 
 digit='^[0-9]+$'
 
-while getopts "d:h:s:t" arg; do
+while getopts "d:h:i:s:t" arg; do
 	case $arg in
 		d)
 			RSYNC_PATH=$OPTARG
+			;;
+		h)
+			usage
+			exit
+			;;
+		i)
+			RESULTS_PATH=$OPTARG
 			;;
 		t)
 			TIME=$OPTARG
 			;;
 		s)
 			SLEEP=$OPTARG
-			[[ (SLEEP == "$digit") && (SLEEP -ge 0) ]] || usage
+			[[ ($SLEEP == "$digit") && ($SLEEP -ge 0) ]] || usage
 			;;
-		h)
-			usage
-			exit
-			;;
+	
 		*)
 			usage
 			;;
 	esac
 done
 
+if [ -z "$RSYNC_PATH" ]
+then
+	exit
+fi
 
+if [ -z "$RESULTS_PATH" ]
+then
+	exit
+fi
 
+if [ -z "$TIME" ]
+then
+	TIME="2 days"
+fi
+
+if [ -z "$SLEEP" ]
+then
+	SLEEP=10
+fi
 
 echo "Starting monitoring script"
 
@@ -36,9 +60,17 @@ Unix_time_current=$(date +%s)
 Unix_time_start_plus=$(date +%s --date="$TIME")
 echo "Timestamp start: " "$Unix_time_current"
 echo "Time in $TIME: " "$Unix_time_start_plus"
-
 counter=0
+
+################################################################
+##############          Monitoring Loop           ##############
+################################################################
 while [[ "$Unix_time_current" -le "$Unix_time_start_plus" ]]
+
+
+################################################################
+###############          Data Transfer           ###############
+################################################################
 do
 	if [ "$counter" -ge 1 ]
 	then
@@ -50,8 +82,10 @@ do
 		done
 	fi
 
-	echo "Time now: " "$Unix_time_current"
-	
+################################################################
+##########          Data Gathering + Output           ##########
+################################################################
+	echo "Time now: " "$Unix_time_current"	
 	echo "Gathering Syscalls"
 	UPTIME=$(cat /proc/uptime | awk '{print $1}')
 	EPOCH=$(date +%s.%3N)
@@ -64,7 +98,9 @@ do
 	Unix_time_current=$(date +%s)
 	counter=$((counter+1))
 done
-
+################################################################
+###############          Data Transfer           ###############
+################################################################
 echo "cleanup results directory"
 for filename in results/*
 	do
