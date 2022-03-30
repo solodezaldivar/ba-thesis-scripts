@@ -26,7 +26,6 @@ while getopts "d:h:i:s:t" arg; do
 			SLEEP=$OPTARG
 			[[ ($SLEEP == "$digit") && ($SLEEP -ge 0) ]] || usage
 			;;
-	
 		*)
 			usage
 			;;
@@ -35,12 +34,12 @@ done
 
 if [ -z "$RSYNC_PATH" ]
 then
-	exit
+	exit 1
 fi
 
 if [ -z "$RESULTS_PATH" ]
 then
-	exit
+	exit 1
 fi
 
 if [ -z "$TIME" ]
@@ -55,7 +54,6 @@ fi
 
 echo "Starting monitoring script"
 
-RESULTS_PATH=~"/ramonThesis/scripts/results/"
 Unix_time_current=$(date +%s)
 Unix_time_start_plus=$(date +%s --date="$TIME")
 echo "Timestamp start: " "$Unix_time_current"
@@ -90,11 +88,9 @@ do
 	UPTIME=$(cat /proc/uptime | awk '{print $1}')
 	EPOCH=$(date +%s.%3N)
 	Date_Hourly=$(date -d @"$EPOCH" +%d-%m-%H_%M_%S)
-	
-	
-	#PERF=top -b | grep -e "perf" | awk '{print $9}'
+		
 	perf trace -S -T -o "./results/${Date_Hourly}".log -a -- sleep "$SLEEP"
-	echo -e "EPOCH: $EPOCH \nUPTIME:$UPTIME" >> $RESULTS_PATH/"${Date_Hourly}".log &
+	echo -e "EPOCH: $EPOCH \nUPTIME:$UPTIME" >> "$RESULTS_PATH"/"${Date_Hourly}".log &
 	Unix_time_current=$(date +%s)
 	counter=$((counter+1))
 done
@@ -105,7 +101,7 @@ echo "cleanup results directory"
 for filename in results/*
 	do
 		echo "$filename"
-		rsync -z --chmod=ugo=rwX --remove-source-files $RESULTS_PATH/"${filename}" "$RSYNC_PATH"
+		rsync -z --chmod=ugo=rwX --remove-source-files "$RESULTS_PATH"/"${filename}" "$RSYNC_PATH"
 	done
 echo "exited MonitoringScript"
 exit 0
