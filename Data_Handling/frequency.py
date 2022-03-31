@@ -9,7 +9,13 @@ import numpy as np
 import itertools
 import sys
 from optparse import OptionParser
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
+
+################################################################
+###################          Setup           ###################
+################################################################
 def get_comma_separated_args(option, opt, value, parser):
     setattr(parser.values, option.dest, value.split(','))
 
@@ -25,28 +31,33 @@ if(options.input == None):
     print(parser.usage)
     exit(0)
 else:
-    dir = options.input
-print(dir)
+    dirs = options.input
 
 # create nested list to save values temporarly
-d = [[],[]]
-
-# dir = ["C:/Users/RamonSolodezaldivar/Documents/test1/tt/", "C:/Users/RamonSolodezaldivar/Documents/test1/tick/"]
+index = []
 count = 1
 round = 1
 df1 = pd.DataFrame()
 df2 = pd.DataFrame()
-
-for dir in dir:
+################################################################
+#################          Main Loop           #################
+################################################################
+for dir in dirs:
+    behavior = dir.split("/")[-2]
+    d = [[],[]]
     for subdir, dirs, files in os.walk(dir):
         for filename in files:
             file = (os.path.join(subdir,filename))
-            print(file)
+            print("Current file {}".format(file))
             df = pd.read_csv(file, sep="\t", names=["ABS TIME  ", "Process Name", "PID ", "System_Call"])
             df['System_Call'] = df['System_Call'].str.replace('*', '')
 
             val_count = df.System_Call.str.split(expand=True).stack().value_counts(normalize=True).sort_index()
+            # val_count.to_csv('{}{}.csv'.format(behavior,count))
 
+
+            # remove nanosleep
+            val_count = val_count.drop(labels='nanosleep')
             if(count > len(d)-1):
                 d.append(['NaN']*len(d[0]))
             
@@ -63,43 +74,66 @@ for dir in dir:
                     d[count].append(val_count[key])
 
                 elif key in d[0]:
-                    index = d[0].index(key)
-                    if index > len(d[count])-1:
+                    i = d[0].index(key)
+                    if i > len(d[count])-1:
                         d[count].append(val_count[key])
-                    elif d[count][index] == 'NaN':
-                        d[count][index] = val_count[key]
-
+                    elif d[count][i] == 'NaN':
+                        d[count][i] = val_count[key]
             count+=1
-        df = pd.DataFrame(d, columns=[d[0]])
-        if round == 1:
+    
+    df = pd.DataFrame(d[1:], columns=d[0])
             df1 = pd.concat([df1, df.iloc[1: , :]])
             df1.drop('nanosleep', inplace=True,axis=1)
 
-        elif round == 2:
-            df2 = pd.concat([df1, df.iloc[1: , :]])
-            df2.drop('nanosleep', inplace=True,axis=1)
-
+    
+    # calculate standard deviation
+    std = df.std()
+    std.name = '{}'.format(behavior)
+    if round == 1:
+        df2 = pd.DataFrame(std)
+    else:
+        df2 = pd.concat([df2, std], axis=1)
+    count = 1
     round+=1
+
+################################################################
+################           Plotting            #################
+################################################################
+        #     count+=1
+        # df1 = pd.concat([df1, df.iloc[1:, :]])
+        # print(df1)
+
+        
+        # if round == 1:
+        #     df1 = pd.concat([df1, df.iloc[1: , :]])
+        #     df1.drop('nanosleep', inplace=True,axis=1)
+
+        # elif round == 2:
+        #     df2 = pd.concat([df1, df.iloc[1: , :]])
+        #     df2.drop('nanosleep', inplace=True,axis=1)
+
 # print(df1)
+    # round+=1
+
 # df1.to_csv('df1.csv')
 # df2.to_csv('df2.csv')
 
-var1 = df1.std()
-var2 = df2.std()
-# xaxis = first_list + list(set(second_list) - set(first_list))
-dd = pd.DataFrame({'normal': var1, 'thetick': var2})
-print(dd)
-xaxis = [dd.keys]
-ax = dd.head().plot.bar(color=['darkgray','gray'], rot=0, title="Normal vs tick")
-ax.set_xlabel("Syscalls")
-ax.set_ylabel("Standard Deviation")
-plt.xticks(fontsize=5)
+# var1 = df1.std()
+# var2 = df2.std()
+# # xaxis = first_list + list(set(second_list) - set(first_list))
+# dd = pd.DataFrame({'normal': var1, 'thetick': var2})
+# print(dd)
+# xaxis = [dd.keys]
+# ax = dd.head().plot.bar(color=['darkgray','gray'], rot=0, title="Normal vs tick")
+# ax.set_xlabel("Syscalls")
+# ax.set_ylabel("Standard Deviation")
+# plt.xticks(fontsize=5)
 
-plt.yscale("log")
-plt.tight_layout()
-# plt.xticks(xaxis)
-plt.show()
-# ax.xaxis.set_major_formatter(plt.FixedFormatter(times`))
+# plt.yscale("log")
+# plt.tight_layout()
+# # plt.xticks(xaxis)
+# plt.show()
+# # ax.xaxis.set_major_formatter(plt.FixedFormatter(times`))
 
 
 
