@@ -6,6 +6,9 @@ import shutil
 from optparse import OptionParser
 
 # pd.set_option('display.float_format', lambda x: '%.30f' % x)
+################################################################
+###################          Setup           ###################
+################################################################
 parser = OptionParser()
 parser.add_option('-d', '--destination', dest = 'destination',
                     type = 'string',
@@ -15,9 +18,7 @@ parser.add_option('-i', '--input', dest = 'input',
                     help = 'specify input directory from which to clean files')
 (options, args) = parser.parse_args()
 
-################################################################
-###################          Setup           ###################
-################################################################
+
 if(options.destination == None):
     print(parser.usage)
     exit(0)
@@ -35,10 +36,6 @@ counter = int(time.time())
 current_time = int(time.time())
 
 
-
-# print(counter)
-# dir = "E:/2DaysCleanRaw/"
-# destination_dir = "E:/2DaysCleaned/"
 
 ################################################################
 #################          Main Loop           #################
