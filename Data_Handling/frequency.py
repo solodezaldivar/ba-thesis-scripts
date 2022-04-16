@@ -1,3 +1,4 @@
+import datetime
 from email import header
 from turtle import color
 from numpy import average
@@ -39,109 +40,87 @@ count = 1
 round = 1
 df1 = pd.DataFrame()
 df2 = pd.DataFrame()
+df_hourWise = pd.DataFrame()
 ################################################################
 #################          Main Loop           #################
 ################################################################
 for dir in dirs:
     behavior = dir.split("/")[-2]
-    d = [[],[]]
-    for subdir, dirs, files in os.walk(dir):
-        for filename in files:
-            file = (os.path.join(subdir,filename))
-            print("Current file {}".format(file))
-            df = pd.read_csv(file, sep="\t", names=["ABS TIME  ", "Process Name", "PID ", "System_Call"])
-            df['System_Call'] = df['System_Call'].str.replace('*', '')
+    subdirs = [x[0] for x in os.walk(dir)]
+    print(subdirs)
+    for subdir in subdirs[1:]:
+        print("Subdir:",subdir)
+        hour = subdir.split("/")[-1]
+        d = [[],[]] 
+        print(subdirs)
+        for files in os.walk(subdir):
+            for filename in files[2]:
+                file = os.path.join(subdir,filename)
+                file = file.replace("\\\\", "\\")
+                print("Current file {}\n Time: {}".format(file, datetime.datetime.now()))
+                df = pd.read_csv(file, sep="\t", names=["ABS TIME", "Process Name", "PID", "System_Call"])
+                df.columns = df.columns.str.replace('\s+', '_')
 
-            val_count = df.System_Call.str.split(expand=True).stack().value_counts(normalize=True).sort_index()
-            # val_count.to_csv('{}{}.csv'.format(behavior,count))
+                # remove rsync, perf and monitoringScri 
+                df = df[df['Process_Name'].str.contains("rsync")==False]
+                df = df[df['Process_Name'].str.contains("perf")==False]
+                df = df[df['Process_Name'].str.contains("monitoringScri")==False]
 
+                df['System_Call'] = df['System_Call'].str.replace('*', '')
+                val_count = df.System_Call.str.split(expand=True).stack().value_counts(normalize=True).sort_index()
 
-            # remove nanosleep
-            val_count = val_count.drop(labels='nanosleep')
-            if(count > len(d)-1):
-                d.append(['NaN']*len(d[0]))
-            
-            for key in val_count.keys():
-                if key not in d[0] and count==1:
-                    d[0].append(key)
-                    index = len(d[0]) - 2
-                    d[1].append(val_count[key])
+                if(count > len(d)-1):
+                    d.append(['NaN']*len(d[0]))
+                print("Count: {}, len(d): {}".format(count,len(d)))
+                
+                for key in val_count.keys():
+                    if key not in d[0] and count==1:
+                        d[0].append(key)
+                        index = len(d[0]) - 2
+                        d[1].append(val_count[key])
 
-                elif key not in d[0] and count!=1:
-                    d[0].append(key)
-                    for i in range(1,len(d)-1):
-                        d[i].append('NaN')
-                    d[count].append(val_count[key])
-
-                elif key in d[0]:
-                    i = d[0].index(key)
-                    if i > len(d[count])-1:
+                    elif key not in d[0] and count!=1:
+                        d[0].append(key)
+                        for i in range(1,len(d)-1):
+                            d[i].append('NaN')
                         d[count].append(val_count[key])
-                    elif d[count][i] == 'NaN':
-                        d[count][i] = val_count[key]
-            count+=1
-    
-    df = pd.DataFrame(d[1:], columns=d[0])
-            df1 = pd.concat([df1, df.iloc[1: , :]])
-            df1.drop('nanosleep', inplace=True,axis=1)
 
-    
-    # calculate standard deviation
-    std = df.std()
-    std.name = '{}'.format(behavior)
+                    elif key in d[0]:
+                        i = d[0].index(key)
+                        if i > len(d[count])-1:
+                            d[count].append(val_count[key])
+                        elif d[count][i] == 'NaN':
+                            d[count][i] = val_count[key]
+                count+=1
+            df = pd.DataFrame(d[1:], columns=d[0])
+            mean = df.mean()
+            mean.name = '{}'.format(hour)
+            df_hourWise = pd.concat([df_hourWise, mean], axis=1)
+            count = 1
+
+        
+################################################################
+################               Mean             ################
+################################################################
+    mean = df_hourWise.mean()
+    mean.name = '{}'.format(behavior)
     if round == 1:
-        df2 = pd.DataFrame(std)
+        df1 = pd.DataFrame(mean)
     else:
-        df2 = pd.concat([df2, std], axis=1)
-    count = 1
+        df1 = pd.concat([df1, mean], axis=1)
+
+################################################################
+###########            Standard Deviation            ###########
+################################################################
+    std = df_hourWise.std(axis=1)
+    std.name = '{}'.format(behavior)
+    df2 = pd.concat([df2, std], axis=1)
     round+=1
 
 ################################################################
-################           Plotting            #################
+##############            Write to CSV            ##############
 ################################################################
-        #     count+=1
-        # df1 = pd.concat([df1, df.iloc[1:, :]])
-        # print(df1)
-
-        
-        # if round == 1:
-        #     df1 = pd.concat([df1, df.iloc[1: , :]])
-        #     df1.drop('nanosleep', inplace=True,axis=1)
-
-        # elif round == 2:
-        #     df2 = pd.concat([df1, df.iloc[1: , :]])
-        #     df2.drop('nanosleep', inplace=True,axis=1)
-
-# print(df1)
-    # round+=1
-
-# df1.to_csv('df1.csv')
-# df2.to_csv('df2.csv')
-
-# var1 = df1.std()
-# var2 = df2.std()
-# # xaxis = first_list + list(set(second_list) - set(first_list))
-# dd = pd.DataFrame({'normal': var1, 'thetick': var2})
-# print(dd)
-# xaxis = [dd.keys]
-# ax = dd.head().plot.bar(color=['darkgray','gray'], rot=0, title="Normal vs tick")
-# ax.set_xlabel("Syscalls")
-# ax.set_ylabel("Standard Deviation")
-# plt.xticks(fontsize=5)
-
-# plt.yscale("log")
-# plt.tight_layout()
-# # plt.xticks(xaxis)
-# plt.show()
-# # ax.xaxis.set_major_formatter(plt.FixedFormatter(times`))
-
-
-
-
-
-# ax = var1.plot(x='syscall', y='Variance', kind='bar')
-# var2.plot(ax=ax, )
-# plt.show()
-# plt.savefig('normal/normal.png')
+df1.to_csv('val_countsTotal.csv')
+df2.to_csv('std_total.csv')
 
             
