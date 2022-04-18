@@ -7,7 +7,7 @@ usage() { echo "Usage: $0 [-d <string>] [-s <int> in seconds] [-t <string>, for 
 
 digit='^[0-9]+$'
 
-while getopts "d:h:i:s:t" arg; do
+while getopts "d:h:i:s:c:t" arg; do
 	case $arg in
 		d)
 			RSYNC_PATH=$OPTARG
@@ -29,12 +29,13 @@ while getopts "d:h:i:s:t" arg; do
 		c) 
 			ITER_MAX=$OPTARG
 			[[ ($SLEEP == "$digit") && ($SLEEP -ge 1) ]] || usage
-
+			;;
 		*)
 			usage
 			;;
 	esac
 done
+
 
 if [ -z "$RSYNC_PATH" ]
 then
