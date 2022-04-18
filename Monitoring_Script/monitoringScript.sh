@@ -26,6 +26,10 @@ while getopts "d:h:i:s:t" arg; do
 			SLEEP=$OPTARG
 			[[ ($SLEEP == "$digit") && ($SLEEP -ge 0) ]] || usage
 			;;
+		c) 
+			ITER_MAX=$OPTARG
+			[[ ($SLEEP == "$digit") && ($SLEEP -ge 1) ]] || usage
+
 		*)
 			usage
 			;;
@@ -70,13 +74,13 @@ while [[ "$Unix_time_current" -le "$Unix_time_start_plus" ]]
 ###############          Data Transfer           ###############
 ################################################################
 do
-	if [ "$counter" -ge 1 ]
+	if [ "$counter" -ge "$ITER_MAX" ]
 	then
 		counter=0
-		for filename in results/*
+		for filename in "$RESULTS_PATH"*
 		do 
 			echo "$filename"
-			rsync -z --chmod=ugo=rwX --remove-source-files $RESULTS_PATH/"${filename}" "$RSYNC_PATH" &			 
+			rsync -z --chmod=ugo=rwX --remove-source-files $RESULTS_PATH"${filename}" "$RSYNC_PATH" &			 
 		done
 	fi
 
@@ -89,7 +93,7 @@ do
 	EPOCH=$(date +%s.%3N)
 	Date_Hourly=$(date -d @"$EPOCH" +%d-%m-%H_%M_%S)
 		
-	perf trace -S -T -o "./results/${Date_Hourly}".log -a -- sleep "$SLEEP"
+	perf trace -S -T -o "$RESULTS_PATH""${Date_Hourly}".log -a -- sleep "$SLEEP"
 	echo -e "EPOCH: $EPOCH \nUPTIME:$UPTIME" >> "$RESULTS_PATH"/"${Date_Hourly}".log &
 	Unix_time_current=$(date +%s)
 	counter=$((counter+1))
@@ -101,7 +105,7 @@ echo "cleanup results directory"
 for filename in results/*
 	do
 		echo "$filename"
-		rsync -z --chmod=ugo=rwX --remove-source-files "$RESULTS_PATH"/"${filename}" "$RSYNC_PATH"
+		rsync -z --chmod=ugo=rwX --remove-source-files "$RESULTS_PATH""${filename}" "$RSYNC_PATH"
 	done
 echo "exited MonitoringScript"
 exit 0
