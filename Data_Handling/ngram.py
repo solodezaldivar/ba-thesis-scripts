@@ -44,7 +44,6 @@ else:
 
 print("Starting {} gram processing.".format(n))
 
-# create nested list to save values temporarly
 index = []
 count = 1
 round = 1
@@ -81,10 +80,9 @@ for dir in dirs:
                     df['System_Call'] = df['System_Call'].str.replace('*', '')
 
                     words = (df.System_Call.str.split().explode())
-                    n = 2
                     n_gram = ngrams(words, n)
-                    l = pd.DataFrame(n_gram)
-                    val_count = l.value_counts(normalize=True)
+                    n_gram_df = pd.DataFrame(n_gram)
+                    val_count = n_gram_df.value_counts(normalize=True)
                     if(count > len(d)-1):
                         d.append(['NaN']*len(d[0]))
                     print("Count: {}, len(d): {}".format(count,len(d)))
@@ -142,7 +140,7 @@ for dir in dirs:
 
 
 ################################################################
-##############            Write to CSV            ##############
+#################            Output            #################
 ################################################################
 #These names are place holders, change as you see fit.
 df1.to_csv('ngram_freq.csv') 

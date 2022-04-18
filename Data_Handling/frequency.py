@@ -34,7 +34,6 @@ if(options.input == None):
 else:
     dirs = options.input
 
-# create nested list to save values temporarly
 index = []
 count = 1
 round = 1
@@ -51,6 +50,7 @@ for dir in dirs:
     for subdir in subdirs[1:]:
         print("Subdir:",subdir)
         hour = subdir.split("/")[-1]
+        # create nested list to save values temporarly
         d = [[],[]] 
         print(subdirs)
         for files in os.walk(subdir):
@@ -118,7 +118,7 @@ for dir in dirs:
     round+=1
 
 ################################################################
-##############            Write to CSV            ##############
+#################            Output            #################
 ################################################################
 df1.to_csv('val_countsTotal.csv')
 df2.to_csv('std_total.csv')

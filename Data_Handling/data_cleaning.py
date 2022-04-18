@@ -29,7 +29,7 @@ if(options.input == None):
     print(parser.usage)
     exit(0)
 else:
-    destination_dir = options.input
+    input_dir = options.input
 
 epoch, uptime = 0.0, 0.0
 counter = int(time.time())
@@ -43,13 +43,13 @@ current_time = int(time.time())
 while(current_time <= 1647524938):
     if (int(time.time()) - counter >= 1):
         counter = int(time.time())
-        for filename in os.listdir(dir):
+        for filename in os.listdir(input_dir):
             if filename.endswith(".log"):
                 print("Running")
                 summaryBool = False
 
                 
-                file = os.path.join(dir, filename)
+                file = os.path.join(input_dir, filename)
                 with open(file, "r+", newline='') as output:
                     # read epoch and uptime values and assign them to variables
                     for line in open(file, 'r'):
@@ -64,8 +64,7 @@ while(current_time <= 1647524938):
                         if (line.__contains__("Summary of events") and (not line.__contains__("EPOCH") or not line.__contains__("EPOCH")) or summaryBool):
                             summaryBool = True
                             summary = filename.split(".")[0] + "-Summary"
-                            # print(summary)
-                            summaryFile = os.path.join(dir, summary)
+                            summaryFile = os.path.join(input_dir, summary)
                             with open("E:/summary/{}.txt".format(summary), 'a+', newline='') as summaryOutput:
                                 csv_summary = csv.writer(summaryOutput, delimiter='\t')
                                 csv_summary.writerow([line])
