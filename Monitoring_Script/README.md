@@ -7,3 +7,4 @@ To run the script you need to set multiple flags.
 ##### `-i` the directory in which the results will be temporarly stored on the target device. This argument is needed to start the script
 ##### `-t` time for which the script will run. Can be specified in seconds/days/weeks. For example: `-t 3 days` | Default is 2 days
 ##### `-s` monitoring interval in seconds. Each interval will create a .txt file with the gathered system calls | Default is 10s
+##### `-c` set the max number of iterations before the data is sent to the server
