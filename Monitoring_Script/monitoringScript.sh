@@ -3,11 +3,11 @@
 ################################################################
 ###################          Setup           ###################
 ################################################################
-usage() { echo "Usage: $0 [-d <string>] [-s <int> in seconds] [-t <string>, for example '2 days'] [-s <int>] [-p <string>]" exit 0; }
+usage() { echo "Usage: $0 [-d destination directory <string>] [-i results directory <string>] [-s <int> in seconds] [-t <string>, for example '2 days']" exit 0; }
 
 digit='^[0-9]+$'
 
-while getopts "d:h:i:s:c:t" arg; do
+while getopts "d:h:p:i:s:t" arg; do
 	case $arg in
 		d)
 			RSYNC_PATH=$OPTARG
@@ -26,35 +26,20 @@ while getopts "d:h:i:s:c:t" arg; do
 			SLEEP=$OPTARG
 			[[ ($SLEEP == "$digit") && ($SLEEP -ge 0) ]] || usage
 			;;
-		c) 
-			ITER_MAX=$OPTARG
-			[[ ($SLEEP == "$digit") && ($SLEEP -ge 1) ]] || usage
-			;;
 		*)
 			usage
 			;;
 	esac
 done
 
-
-if [ -z "$RSYNC_PATH" ]
-then
-	exit 1
-fi
-
-if [ -z "$RESULTS_PATH" ]
-then
-	exit 1
-fi
-
 if [ -z "$TIME" ]
 then
-	TIME="2 days"
+TIME="2 days"
 fi
 
 if [ -z "$SLEEP" ]
 then
-	SLEEP=10
+SLEEP=10
 fi
 
 echo "Starting monitoring script"
@@ -75,13 +60,13 @@ while [[ "$Unix_time_current" -le "$Unix_time_start_plus" ]]
 ###############          Data Transfer           ###############
 ################################################################
 do
-	if [[ "$counter" -ge "$ITER_MAX" ]]
+	if [ "$counter" -ge 1 ]
 	then
 		counter=0
-		for filename in "$RESULTS_PATH"*
+		for filename in $RESULTS_PATH/*
 		do 
 			echo "$filename"
-			rsync -z --chmod=ugo=rwX --remove-source-files $RESULTS_PATH"${filename}" "$RSYNC_PATH" &			 
+			rsync -z --chmod=ugo=rwX --remove-source-files ${filename} "$RSYNC_PATH" &			 
 		done
 	fi
 
@@ -94,8 +79,8 @@ do
 	EPOCH=$(date +%s.%3N)
 	Date_Hourly=$(date -d @"$EPOCH" +%d-%m-%H_%M_%S)
 		
-	perf trace -S -T -o "$RESULTS_PATH""${Date_Hourly}".log -a -- sleep "$SLEEP"
-	echo -e "EPOCH: $EPOCH \nUPTIME:$UPTIME" >> "$RESULTS_PATH""${Date_Hourly}".log &
+	perf trace -S -T -o "./results/${Date_Hourly}".log -a -- sleep "$SLEEP"
+	echo -e "EPOCH: $EPOCH \nUPTIME:$UPTIME" >> $RESULTS_PATH/"${Date_Hourly}".log &
 	Unix_time_current=$(date +%s)
 	counter=$((counter+1))
 done
@@ -103,10 +88,10 @@ done
 ###############          Data Transfer           ###############
 ################################################################
 echo "cleanup results directory"
-for filename in results/*
+for filename in $RESULTS_PATH/*
 	do
 		echo "$filename"
-		rsync -z --chmod=ugo=rwX --remove-source-files "$RESULTS_PATH""${filename}" "$RSYNC_PATH"
+		rsync -z --chmod=ugo=rwX --remove-source-files ${filename} "$RSYNC_PATH"
 	done
 echo "exited MonitoringScript"
 exit 0

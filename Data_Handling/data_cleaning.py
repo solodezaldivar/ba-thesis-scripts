@@ -16,6 +16,9 @@ parser.add_option('-d', '--destination', dest = 'destination',
 parser.add_option('-i', '--input', dest = 'input',
                     type = 'string',
                     help = 'specify input directory from which to clean files')
+parser.add_option('-t', '--time', dest = 'time',
+                    type = 'int',
+                    help = 'specify input directory from which to clean files')
 (options, args) = parser.parse_args()
 
 
@@ -31,6 +34,16 @@ if(options.input == None):
 else:
     input_dir = options.input
 
+if(options.time == None):
+    print(parser.usage)
+    exit(0)
+elif(options.time < int(time.time())):
+    print(parser.usage)
+    print('-t has to specify unix timestamp in the future')
+    exit(0)
+else:
+    max_time = options.time
+
 epoch, uptime = 0.0, 0.0
 counter = int(time.time())
 current_time = int(time.time())
@@ -40,7 +53,7 @@ current_time = int(time.time())
 ################################################################
 #################          Main Loop           #################
 ################################################################
-while(current_time <= 1647524938):
+while(current_time <= max_time):
     if (int(time.time()) - counter >= 1):
         counter = int(time.time())
         for filename in os.listdir(input_dir):
